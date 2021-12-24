@@ -25,12 +25,15 @@ public class EchoClient extends JFrame {
         connectionToServer();
         dis = new DataInputStream(socket.getInputStream());
         dos = new DataOutputStream(socket.getOutputStream());
-        if (new Login(dos, dis).loginToChat()) {
-            prepareGUI();
-        }
+        boolean isLogIn = new Login(dos, dis).loginToChat();
+
         Thread thread = new Thread(() -> {
             try {
                 while (true) {
+                    if(!isLogIn){
+                        JOptionPane.showMessageDialog(null, "Connection timeout exceeded");
+                        return;
+                    }
                     String message;
                     if (dis.available() > 0) {
                         message = dis.readUTF();
@@ -52,6 +55,16 @@ public class EchoClient extends JFrame {
         });
         thread.setDaemon(true);
         thread.start();
+        if (isLogIn) {
+            prepareGUI();
+        } else{
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            closeConnection();
+        }
     }
 
     private void sendMessageToServer() {

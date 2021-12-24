@@ -1,10 +1,9 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Login extends JFrame {
 
@@ -76,8 +75,22 @@ public class Login extends JFrame {
 
     public boolean loginToChat() {
         loginGUI();
+        AtomicBoolean flagTimer = new AtomicBoolean(false);
+        Thread thread = new Thread(()->{
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            flagTimer.set(true);
+        });
+        thread.start();
         while (true) {
             try {
+                if(flagTimer.get()){
+                    dispose();
+                    return false;
+                }
                 if (dis.available() > 0) {
                     String message = dis.readUTF();
                     if (message.equals("Login completed")) {
