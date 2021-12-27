@@ -12,10 +12,11 @@ import java.net.Socket;
 public class EchoClient extends JFrame {
 
     private final String SERVER_ADDRESS = "127.0.0.1";
-    private final Integer SERVER_PORT = 8880;
+    private final Integer SERVER_PORT = 8886;
     private DataInputStream dis;
     private DataOutputStream dos;
     private Socket socket;
+    private boolean isExit = false;
 
     private JTextField msgInputField;
     private JTextArea chatArea;
@@ -24,34 +25,44 @@ public class EchoClient extends JFrame {
         connectionToServer();
         dis = new DataInputStream(socket.getInputStream());
         dos = new DataOutputStream(socket.getOutputStream());
-        prepareGUI();
-        new Thread(() -> {
+        if (new Login(dos, dis).loginToChat()) {
+            prepareGUI();
+        }
+        Thread thread = new Thread(() -> {
             try {
                 while (true) {
-                    String fromServer = dis.readUTF();
-                    System.out.println("Message from server: " + fromServer);
-                    if (fromServer.equalsIgnoreCase("/finish")) {
-                        dos.writeUTF(fromServer);
-                        closeConnection();
-                        dispose();
-                        break;
+                    String message;
+                    if (dis.available() > 0) {
+                        message = dis.readUTF();
+                        if (message.startsWith("/start")) {
+                            chatArea.append(message + "\n");
+                            break;
+                        }
+                        if (isExit) {
+                            closeConnection();
+                            break;
+                        }
+                        chatArea.append(message + "\n");
                     }
-                    chatArea.append("Message from server: " + fromServer + "\n");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
                 JOptionPane.showMessageDialog(null, "Wrong connection to server");
             }
-        }).start();
+        });
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private void sendMessageToServer() {
         String msg = msgInputField.getText();
+        if (msg.equals("/finish")) {
+            isExit = true;
+        }
         System.out.println("Message to server: " + msg);
-        if (msg != null && !msg.trim().isEmpty()) {
+        if (!msg.trim().isEmpty()) {
             try {
                 dos.writeUTF(msg);
-                chatArea.append("Message to server: " + msg + "\n");
                 msgInputField.setText("");
                 msgInputField.grabFocus();
             } catch (IOException e) {
@@ -81,9 +92,10 @@ public class EchoClient extends JFrame {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        dispose();
     }
 
-    public void prepareGUI() {
+    private void prepareGUI() {
         // Параметры окна
         setBounds(600, 300, 500, 500);
         setTitle("Клиент");
@@ -92,6 +104,7 @@ public class EchoClient extends JFrame {
         // Текстовое поле для вывода сообщений
         chatArea = new JTextArea();
         chatArea.setEditable(false);
+        chatArea.setFont(new Font("Arial", Font.BOLD, 16));
         chatArea.setLineWrap(true);
         add(new JScrollPane(chatArea), BorderLayout.CENTER);
 
@@ -102,18 +115,8 @@ public class EchoClient extends JFrame {
         msgInputField = new JTextField();
         add(bottomPanel, BorderLayout.SOUTH);
         bottomPanel.add(msgInputField, BorderLayout.CENTER);
-        btnSendMsg.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                sendMessageToServer();
-            }
-        });
-        msgInputField.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                sendMessageToServer();
-            }
-        });
+        btnSendMsg.addActionListener(e -> sendMessageToServer());
+        msgInputField.addActionListener(e -> sendMessageToServer());
 
         // Настраиваем действие на закрытие окна
         addWindowListener(new WindowAdapter() {
@@ -132,6 +135,5 @@ public class EchoClient extends JFrame {
 
         setVisible(true);
     }
-
 
 }
