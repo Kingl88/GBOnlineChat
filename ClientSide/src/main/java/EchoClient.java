@@ -43,7 +43,7 @@ public class EchoClient extends JFrame {
                         }
                         if (isExit) {
                             closeConnection();
-                            break;
+                            return;
                         }
                         chatArea.append(message + "\n");
                     }

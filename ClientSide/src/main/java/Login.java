@@ -45,13 +45,9 @@ public class Login extends JFrame {
         panel.add(btnOk);
         btnCancel.setBounds(125, 70, 90, 30);
         panel.add(btnCancel);
-
         btnOk.addActionListener(e -> sendMessageFromLoginForm());
-
         btnCancel.addActionListener(e -> dispose());
-
         getContentPane().add(panel);
-
         setVisible(true);
     }
 
@@ -76,28 +72,34 @@ public class Login extends JFrame {
     public boolean loginToChat() {
         loginGUI();
         AtomicBoolean flagTimer = new AtomicBoolean(false);
-        Thread thread = new Thread(()->{
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        Thread thread = new Thread(() -> {
+            synchronized (flagTimer) {
+                try {
+                    flagTimer.wait(120000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
             flagTimer.set(true);
         });
+        thread.setDaemon(true);
         thread.start();
         while (true) {
             try {
-                if(flagTimer.get()){
+                if (flagTimer.get()) {
                     dispose();
                     return false;
                 }
-                if (dis.available() > 0) {
-                    String message = dis.readUTF();
-                    if (message.equals("Login completed")) {
-                        dispose();
-                        return true;
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Wrong login or password!");
+                synchronized (flagTimer) {
+                    if (dis.available() > 0) {
+                        String message = dis.readUTF();
+                        if (message.equals("Login completed")) {
+                            flagTimer.notify();
+                            dispose();
+                            return true;
+                        } else {
+                            JOptionPane.showMessageDialog(null, "Wrong login or password!");
+                        }
                     }
                 }
             } catch (IOException e) {
