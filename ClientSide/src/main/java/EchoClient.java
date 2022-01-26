@@ -4,20 +4,21 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 public class EchoClient extends JFrame {
-
+    private final int NUMBER_LINE_FOR_READ_FROM_FILE = 100;
     private final String SERVER_ADDRESS = "127.0.0.1";
     private final Integer SERVER_PORT = 8886;
     private DataInputStream dis;
     private DataOutputStream dos;
     private Socket socket;
     private boolean isExit = false;
-
+    private String loginForFileName;
     private JTextField msgInputField;
     private JTextArea chatArea;
 
@@ -25,8 +26,28 @@ public class EchoClient extends JFrame {
         connectionToServer();
         dis = new DataInputStream(socket.getInputStream());
         dos = new DataOutputStream(socket.getOutputStream());
-        if (new Login(dos, dis).loginToChat()) {
+        Login login = new Login(dos, dis);
+        if (login.loginToChat()) {
             prepareGUI();
+            loginForFileName = login.getLogin();
+            try (BufferedReader br = new BufferedReader(new FileReader("serverLog.txt"))) {
+                List<String> allFile = new ArrayList<>();
+                String line;
+                while ((line = br.readLine()) != null) {
+                    allFile.add(line);
+                }
+                if (allFile.size() < NUMBER_LINE_FOR_READ_FROM_FILE){
+                    for (String s : allFile) {
+                        chatArea.append(s + "\n");
+                    }
+                } else {
+                    for (int i = allFile.size() - NUMBER_LINE_FOR_READ_FROM_FILE; i < allFile.size(); i++) {
+                        chatArea.append(allFile.get(i) + "\n");
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
         Thread thread = new Thread(() -> {
             try {
@@ -42,7 +63,12 @@ public class EchoClient extends JFrame {
                             closeConnection();
                             break;
                         }
-                        chatArea.append(message + "\n");
+                        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream("client" + loginForFileName + ".txt", true))) {
+                            bos.write((message + "\n").getBytes(StandardCharsets.UTF_8));
+                            chatArea.append(message + "\n");
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
             } catch (Exception e) {

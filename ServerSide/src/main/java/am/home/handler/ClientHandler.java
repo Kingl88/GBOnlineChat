@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.net.Socket;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class ClientHandler {
 
@@ -16,6 +18,7 @@ public class ClientHandler {
     private DataInputStream dis;
     private DataOutputStream dos;
     private Statement statement;
+    private Date date;
 
     private String nickName;
 
@@ -26,6 +29,7 @@ public class ClientHandler {
             this.dis = new DataInputStream(socket.getInputStream());
             this.dos = new DataOutputStream(socket.getOutputStream());
             this.statement = statement;
+            this.date = new Date();
             Thread thread = new Thread(() -> {
                 try {
                     authentication();
@@ -99,9 +103,14 @@ public class ClientHandler {
                 myServer.sendMessageToAllClient(nickName + " changed his nickname to " + message.split("-")[1].trim());
                 nickName=message.split("-")[1].trim();
             } else {
-                myServer.sendMessageToAllClient(nickName + ": " + message);
+                myServer.sendMessageToAllClient(date() + nickName + ": " + message);
             }
         }
+    }
+
+    private String date(){
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("[HH:mm]");
+        return simpleDateFormat.format(date);
     }
 
     public String getNickName() {
