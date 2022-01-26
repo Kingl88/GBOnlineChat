@@ -1,11 +1,14 @@
 package am.home.service;
 
 import am.home.handler.ClientHandler;
+import am.home.service.db.DBConnection;
 import am.home.service.interfaces.AuthenticationService;
 
 import javax.swing.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,18 +18,35 @@ public class MyServer {
 
     private AuthenticationService authenticationService;
     private List<ClientHandler> handlerList;
+    private static Connection dbConnection;
+    private static Statement statement;
 
     public MyServer() {
         System.out.println("Server started");
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
-            authenticationService = new AuthenticationServiceImpl();
+            dbConnection = DBConnection.getConnection();
+            statement = dbConnection.createStatement();
+            authenticationService = new AuthenticationServiceImpl(statement);
             authenticationService.start();
+//            statement.executeUpdate("CREATE TABLE IF NOT EXISTS users (" +
+//                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+//                    "login TEXT," +
+//                    "password TEXT," +
+//                    "nickName TEXT" + ")");
+//            statement.executeUpdate("INSERT INTO users (login, password, nickName)"
+//                    + "VALUES ('A', 'A', 'A');");
+//            statement.executeUpdate("INSERT INTO users (login, password, nickName)"
+//                    + "VALUES ('B', 'B', 'B');");
+//            statement.executeUpdate("INSERT INTO users (login, password, nickName)"
+//                    + "VALUES ('C', 'C', 'C');");
+//            statement.executeUpdate("INSERT INTO users (login, password, nickName)"
+//                    + "VALUES ('D', 'D', 'D');");
             handlerList = new ArrayList<>();
             while (true) {
                 System.out.println("Server wait connections ...");
                 Socket socket = serverSocket.accept();
                 System.out.println("Client connected");
-                new ClientHandler(this, socket);
+                new ClientHandler(this, socket, statement);
             }
         } catch (Exception e) {
             e.printStackTrace();
