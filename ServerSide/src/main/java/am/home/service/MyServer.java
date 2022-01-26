@@ -5,8 +5,13 @@ import am.home.service.db.DBConnection;
 import am.home.service.interfaces.AuthenticationService;
 
 import javax.swing.*;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -83,6 +88,13 @@ public class MyServer {
     }
 
     public void sendMessageToAllClient(String message) {
+        File file = new File("serverLog.txt");
+        file.deleteOnExit();
+        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file, true))) {
+            bos.write((message + "\n").getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         handlerList.forEach(clientHandler -> clientHandler.sendMessage(message));
     }
 

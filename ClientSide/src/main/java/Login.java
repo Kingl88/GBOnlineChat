@@ -1,7 +1,5 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -14,6 +12,7 @@ public class Login extends JFrame {
     private JTextField login;
     private JTextField password;
     AtomicBoolean flagTimer = new AtomicBoolean(false);
+    private String loginForFileName;
 
     public Login(DataOutputStream dos, DataInputStream dis) throws HeadlessException {
         this.dos = dos;
@@ -62,6 +61,7 @@ public class Login extends JFrame {
     }
 
     private void sendMessageFromLoginForm() {
+        loginForFileName = login.getText();
         String msgLogin = login.getText();
         String msgPassword = password.getText();
         String msgToServer = "/start-".concat(msgLogin).concat("-").concat(msgPassword);
@@ -77,6 +77,10 @@ public class Login extends JFrame {
                 JOptionPane.showMessageDialog(null, "You send incorrect message");
             }
         }
+    }
+
+    public String getLogin(){
+        return loginForFileName;
     }
 
     public boolean loginToChat() {
