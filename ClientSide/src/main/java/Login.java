@@ -1,10 +1,11 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Login extends JFrame {
 
@@ -12,6 +13,7 @@ public class Login extends JFrame {
     DataInputStream dis;
     private JTextField login;
     private JTextField password;
+    AtomicBoolean flagTimer = new AtomicBoolean(false);
 
     public Login(DataOutputStream dos, DataInputStream dis) throws HeadlessException {
         this.dos = dos;
@@ -49,7 +51,10 @@ public class Login extends JFrame {
 
         btnOk.addActionListener(e -> sendMessageFromLoginForm());
 
-        btnCancel.addActionListener(e -> dispose());
+        btnCancel.addActionListener(e -> {
+            System.exit(0);
+            dispose();
+        });
 
         getContentPane().add(panel);
 
@@ -76,8 +81,21 @@ public class Login extends JFrame {
 
     public boolean loginToChat() {
         loginGUI();
+        Thread thread = new Thread(() -> {
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            flagTimer.set(true);
+        });
+        thread.start();
         while (true) {
             try {
+                if (flagTimer.get()) {
+                    dispose();
+                    return false;
+                }
                 if (dis.available() > 0) {
                     String message = dis.readUTF();
                     if (message.equals("Login completed")) {
