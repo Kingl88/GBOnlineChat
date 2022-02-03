@@ -7,7 +7,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -17,20 +16,18 @@ public class ClientHandler {
     private Socket socket;
     private DataInputStream dis;
     private DataOutputStream dos;
-    private Statement statement;
     private Date date;
 
     private String nickName;
 
-    public ClientHandler(MyServer myServer, Socket socket, Statement statement) {
+    public ClientHandler(MyServer myServer, Socket socket) {
         try {
             this.myServer = myServer;
             this.socket = socket;
             this.dis = new DataInputStream(socket.getInputStream());
             this.dos = new DataOutputStream(socket.getOutputStream());
-            this.statement = statement;
             this.date = new Date();
-            Thread thread = new Thread(() -> {
+            myServer.getService().execute(() -> {
                 try {
                     authentication();
                     receiveMessage();
@@ -40,7 +37,6 @@ public class ClientHandler {
                     closeConnection();
                 }
             });
-            thread.start();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -96,7 +92,7 @@ public class ClientHandler {
                 return;
             } else if (message.startsWith("/rn")) {
                 try {
-                    statement.executeUpdate("UPDATE users SET nickName = '" + message.split("-")[1].trim() + "' WHERE nickName = '" + nickName + "';");
+                    myServer.getStatement().executeUpdate("UPDATE users SET nickName = '" + message.split("-")[1].trim() + "' WHERE nickName = '" + nickName + "';");
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }

@@ -16,6 +16,8 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MyServer {
 
@@ -25,6 +27,7 @@ public class MyServer {
     private List<ClientHandler> handlerList;
     private static Connection dbConnection;
     private static Statement statement;
+    private static ExecutorService executorService = Executors.newCachedThreadPool();
 
     public MyServer() {
         System.out.println("Server started");
@@ -51,11 +54,12 @@ public class MyServer {
                 System.out.println("Server wait connections ...");
                 Socket socket = serverSocket.accept();
                 System.out.println("Client connected");
-                new ClientHandler(this, socket, statement);
+                new ClientHandler(this, socket);
             }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
+            executorService.shutdown();
             authenticationService.stop();
         }
     }
@@ -108,5 +112,13 @@ public class MyServer {
 
     public AuthenticationService getAuthenticationService() {
         return this.authenticationService;
+    }
+
+    public Statement getStatement() {
+        return statement;
+    }
+
+    public ExecutorService getService() {
+        return executorService;
     }
 }
