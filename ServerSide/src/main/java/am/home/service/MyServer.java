@@ -3,6 +3,9 @@ package am.home.service;
 import am.home.handler.ClientHandler;
 import am.home.service.db.DBConnection;
 import am.home.service.interfaces.AuthenticationService;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import java.io.BufferedOutputStream;
@@ -22,7 +25,7 @@ import java.util.concurrent.Executors;
 public class MyServer {
 
     private static final Integer PORT = 8886;
-
+    private final static Logger LOGGER = LogManager.getLogger(MyServer.class.getName());
     private AuthenticationService authenticationService;
     private List<ClientHandler> handlerList;
     private static Connection dbConnection;
@@ -30,7 +33,8 @@ public class MyServer {
     private static ExecutorService executorService = Executors.newCachedThreadPool();
 
     public MyServer() {
-        System.out.println("Server started");
+        LOGGER.atLevel(Level.ALL);
+        LOGGER.info("Server started");
         try (ServerSocket serverSocket = new ServerSocket(PORT)) {
             dbConnection = DBConnection.getConnection();
             statement = dbConnection.createStatement();
@@ -51,9 +55,9 @@ public class MyServer {
 //                    + "VALUES ('D', 'D', 'D');");
             handlerList = new ArrayList<>();
             while (true) {
-                System.out.println("Server wait connections ...");
+                LOGGER.info("Server wait connections ...");
                 Socket socket = serverSocket.accept();
-                System.out.println("Client connected");
+                LOGGER.info("Client connected");
                 new ClientHandler(this, socket);
             }
         } catch (Exception e) {
@@ -72,9 +76,11 @@ public class MyServer {
         ClientHandler clientTo = handlerList.stream().filter(clientHandler -> clientHandler.getNickName().equals(to)).findAny().orElse(null);
         if (clientTo != null) {
             if (clientTo.equals(ch)) {
+                LOGGER.info(message);
                 JOptionPane.showMessageDialog(null, "You're trying to send a message to yourself");
             } else {
                 clientTo.sendMessage("Message from " + ch.getNickName() + ": " + message);
+                LOGGER.info(message);
                 ch.sendMessage("Message to " + clientTo.getNickName() + ": " + message);
             }
         } else {
@@ -83,9 +89,11 @@ public class MyServer {
     }
 
     public synchronized void sendOnline(ClientHandler client) {
+        LOGGER.info("Users online");
         client.sendMessage("Users online");
         for (ClientHandler ch : handlerList) {
             if (!ch.equals(client)) {
+                LOGGER.info(ch.getNickName());
                 client.sendMessage(ch.getNickName());
             }
         }
@@ -99,6 +107,7 @@ public class MyServer {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        LOGGER.info(message);
         handlerList.forEach(clientHandler -> clientHandler.sendMessage(message));
     }
 
